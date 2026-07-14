@@ -525,6 +525,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     @Override
     protected void onResume() {
         super.onResume();
+        getPlayerView().refreshFrameRateOverlay();
         setRedirect(false);
         if (shouldReclaim()) {
             detachSurface();

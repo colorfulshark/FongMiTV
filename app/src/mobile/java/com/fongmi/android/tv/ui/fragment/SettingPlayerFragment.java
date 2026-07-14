@@ -50,6 +50,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
         format = new DecimalFormat("0.#");
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
+        mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
         mBinding.backgroundText.setText((background = ResUtil.getStringArray(R.array.select_background))[PlayerSetting.getBackground()]);
@@ -63,6 +64,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.speed.setOnClickListener(this::onSpeed);
         mBinding.background.setOnClickListener(this::onBackground);
+        mBinding.frameRate.setOnClickListener(this::onFrameRate);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.preload.setOnClickListener(this::onPreload);
         mBinding.decode.setOnClickListener(this::onDecode);
@@ -119,6 +121,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
             PlayerSetting.putBackground(which);
             dialog.dismiss();
         }).show();
+    }
+
+    private void onFrameRate(View view) {
+        PlayerSetting.putFrameRateVisible(!PlayerSetting.isFrameRateVisible());
+        mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
     }
 
     private void setAdblock(View view) {

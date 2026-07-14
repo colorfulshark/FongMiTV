@@ -47,6 +47,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
         mBinding.backgroundText.setText(Setting.getSwitch(PlayerSetting.isBackgroundOn()));
+        mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
     }
@@ -59,6 +60,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.speed.setOnClickListener(this::onSpeed);
         mBinding.background.setOnClickListener(this::onBackground);
+        mBinding.frameRate.setOnClickListener(this::onFrameRate);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.preload.setOnClickListener(this::onPreloadSetting);
         mBinding.decode.setOnClickListener(this::onDecodeSetting);
@@ -111,6 +113,11 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
     private void onBackground(View view) {
         PlayerSetting.putBackground(PlayerSetting.isBackgroundOn() ? 0 : 1);
         mBinding.backgroundText.setText(Setting.getSwitch(PlayerSetting.isBackgroundOn()));
+    }
+
+    private void onFrameRate(View view) {
+        PlayerSetting.putFrameRateVisible(!PlayerSetting.isFrameRateVisible());
+        mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
     }
 
     private void setAdblock(View view) {

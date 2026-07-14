@@ -93,6 +93,14 @@ public class PlayerSetting {
         Prefers.put("caption", caption);
     }
 
+    public static boolean isFrameRateVisible() {
+        return Prefers.getBoolean("frame_rate_visible");
+    }
+
+    public static void putFrameRateVisible(boolean visible) {
+        Prefers.put("frame_rate_visible", visible);
+    }
+
     public static float getSubtitleTextSize() {
         return Prefers.getFloat("subtitle_text_size");
     }
