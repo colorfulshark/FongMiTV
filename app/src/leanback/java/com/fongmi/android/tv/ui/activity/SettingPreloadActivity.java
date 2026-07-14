@@ -9,7 +9,6 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.ActivitySettingPreloadBinding;
-import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.PreloadSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -55,7 +54,7 @@ public class SettingPreloadActivity extends BaseActivity {
         boolean preload = PreloadSetting.isPreload();
         mBinding.preloadSize.setVisibility(preload ? View.VISIBLE : View.GONE);
         mBinding.preloadTime.setVisibility(preload ? View.VISIBLE : View.GONE);
-        mBinding.preloadThread.setVisibility(preload && !PlayerSetting.isMpv() ? View.VISIBLE : View.GONE);
+        mBinding.preloadThread.setVisibility(preload ? View.VISIBLE : View.GONE);
     }
 
     private void setPreload(View view) {

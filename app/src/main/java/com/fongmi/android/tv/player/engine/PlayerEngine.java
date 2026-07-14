@@ -11,8 +11,6 @@ public interface PlayerEngine {
     int SOFT = 0;
     int HARD = 1;
 
-    Type getType();
-
     Player getPlayer();
 
     void release();
@@ -46,10 +44,5 @@ public interface PlayerEngine {
         RECOVERED,
         DECODE,
         FATAL
-    }
-
-    enum Type {
-        EXO,
-        MPV
     }
 }

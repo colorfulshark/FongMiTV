@@ -28,7 +28,7 @@
             android:elevation="4dp"
             android:focusable="true">
 
-            <androidx.media3.ui.PlayerView
+            <com.fongmi.android.tv.ui.custom.PlayerView
                 android:id="@+id/player"
                 style="@style/Player.Vod"
                 android:layout_width="match_parent"

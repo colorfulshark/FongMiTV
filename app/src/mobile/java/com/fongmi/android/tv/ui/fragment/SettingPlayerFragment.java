@@ -18,7 +18,6 @@ import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
-import com.fongmi.android.tv.ui.dialog.MpvConfDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -34,7 +33,6 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
     private String[] caption;
     private String[] render;
     private String[] scale;
-    private String[] engine;
 
     public static SettingPlayerFragment newInstance() {
         return new SettingPlayerFragment();
@@ -52,8 +50,6 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
         format = new DecimalFormat("0.#");
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
-        mBinding.mpvVulkanText.setText(Setting.getSwitch(PlayerSetting.isMpvVulkan()));
-        mBinding.mpvGpuNextText.setText(Setting.getSwitch(PlayerSetting.isMpvGpuNext()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
         mBinding.backgroundText.setText((background = ResUtil.getStringArray(R.array.select_background))[PlayerSetting.getBackground()]);
@@ -61,10 +57,6 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
 
     @Override
     protected void initEvent() {
-        mBinding.engine.setOnClickListener(this::setEngine);
-        mBinding.mpvConf.setOnClickListener(this::onMpvConf);
-        mBinding.mpvGpuNext.setOnClickListener(this::setMpvGpuNext);
-        mBinding.mpvVulkan.setOnClickListener(this::setMpvVulkan);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.scale.setOnClickListener(this::onScale);
         mBinding.caption.setOnClickListener(this::setCaption);
@@ -78,34 +70,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
     }
 
     private void setVisible() {
-        boolean exo = !PlayerSetting.isMpv();
-        mBinding.mpvConf.setVisibility(exo ? View.GONE : View.VISIBLE);
-        mBinding.mpvVulkan.setVisibility(exo ? View.GONE : View.VISIBLE);
-        mBinding.mpvGpuNext.setVisibility(exo ? View.GONE : View.VISIBLE);
-        mBinding.decode.setVisibility(exo ? View.VISIBLE : View.GONE);
-        mBinding.adblock.setVisibility(exo ? View.VISIBLE : View.GONE);
         mBinding.caption.setVisibility(PlayerSetting.hasCaption() ? View.VISIBLE : View.GONE);
-    }
-
-    private void setEngine(View view) {
-        int index = (PlayerSetting.getEngine() + 1) % engine.length;
-        PlayerSetting.putEngine(index);
-        setPlaybackModeText();
-        setVisible();
-    }
-
-    private void onMpvConf(View view) {
-        MpvConfDialog.show(this);
-    }
-
-    private void setMpvGpuNext(View view) {
-        PlayerSetting.putMpvGpuNext(!PlayerSetting.isMpvGpuNext());
-        mBinding.mpvGpuNextText.setText(Setting.getSwitch(PlayerSetting.isMpvGpuNext()));
-    }
-
-    private void setMpvVulkan(View view) {
-        PlayerSetting.putMpvVulkan(!PlayerSetting.isMpvVulkan());
-        mBinding.mpvVulkanText.setText(Setting.getSwitch(PlayerSetting.isMpvVulkan()));
     }
 
     private void setRender(View view) {
@@ -115,9 +80,8 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
     }
 
     private void setPlaybackModeText() {
-        engine = ResUtil.getStringArray(R.array.select_engine);
         render = ResUtil.getStringArray(R.array.select_render);
-        mBinding.engineText.setText(engine[PlayerSetting.getEngine()]);
+        mBinding.engineText.setText(R.string.play_exo);
         mBinding.renderText.setText(render[PlayerSetting.getRender()]);
     }
 

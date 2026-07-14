@@ -7,7 +7,6 @@ import androidx.media3.common.C;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.utils.ResUtil;
 
 public final class PlaybackAction {
@@ -62,12 +61,7 @@ public final class PlaybackAction {
     }
 
     public static String getEngineText(PlayerManager player) {
-        return ResUtil.getStringArray(R.array.select_engine)[getEngine(player)];
-    }
-
-    public static int getEngine(PlayerManager player) {
-        if (player == null || player.isReleased()) return PlayerSetting.getEngine();
-        return player.getEngine();
+        return ResUtil.getString(R.string.play_exo);
     }
 
     private static String getDecodeText(PlayerManager player) {

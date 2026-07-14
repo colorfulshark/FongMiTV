@@ -51,7 +51,6 @@ public class SettingDecodeActivity extends BaseActivity {
     }
 
     private void setTunnel(View view) {
-        if (PlayerSetting.isMpv()) return;
         PlayerSetting.putTunnel(!PlayerSetting.isTunnel());
         mBinding.tunnelText.setText(Setting.getSwitch(PlayerSetting.isTunnel()));
     }

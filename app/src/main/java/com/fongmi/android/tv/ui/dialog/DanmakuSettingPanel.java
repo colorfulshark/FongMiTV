@@ -4,7 +4,7 @@ import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
-import androidx.media3.ui.danmaku.DanmakuConfig;
+import com.fongmi.android.tv.player.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.DialogDanmakuSettingBinding;

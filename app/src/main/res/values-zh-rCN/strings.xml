@@ -30,7 +30,6 @@
     <string name="play_op">片头</string>
     <string name="play_ed">片尾</string>
     <string name="play_exo">EXO</string>
-    <string name="play_mpv">MPV</string>
     <string name="play_other">其它</string>
     <string name="play_next">下集</string>
     <string name="play_prev">上集</string>
@@ -171,10 +170,6 @@
     <string name="player_preload_size">预载容量</string>
     <string name="player_preload_time">预载时间</string>
     <string name="player_preload_time_value">%1$d 秒</string>
-    <string name="player_mpv_conf">mpv.conf</string>
-    <string name="player_mpv_gpu_next">gpu-next</string>
-    <string name="player_mpv_vulkan">vulkan</string>
-    <string name="player_mpv_conf_import_success">已导入 mpv.conf</string>
     <string name="player_ua">User-Agent</string>
 
     <!-- Danmaku -->

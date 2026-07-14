@@ -74,14 +74,6 @@ public class Path {
         return mkdir(new File(cache(), "exo"));
     }
 
-    public static File mpvCache() {
-        return mkdir(new File(cache(), "mpv"));
-    }
-
-    public static File mpv() {
-        return mkdir(new File(tv(), "mpv"));
-    }
-
     public static File epg() {
         return mkdir(new File(cache(), "epg"));
     }
@@ -108,10 +100,6 @@ public class Path {
 
     public static File files(String name) {
         return new File(files(), name);
-    }
-
-    public static File mpv(String name) {
-        return new File(mpv(), name);
     }
 
     public static File epg(String name) {

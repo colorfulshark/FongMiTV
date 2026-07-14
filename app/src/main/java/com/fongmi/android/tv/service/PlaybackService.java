@@ -23,7 +23,7 @@ import androidx.media3.session.SessionCommand;
 import androidx.media3.session.SessionCommands;
 import androidx.media3.session.SessionError;
 import androidx.media3.session.SessionResult;
-import androidx.media3.ui.danmaku.DanmakuConfig;
+import com.fongmi.android.tv.player.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.BuildConfig;

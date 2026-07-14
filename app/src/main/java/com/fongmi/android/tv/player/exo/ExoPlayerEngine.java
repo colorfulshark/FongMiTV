@@ -29,11 +29,6 @@ public class ExoPlayerEngine implements PlayerEngine {
     }
 
     @Override
-    public Type getType() {
-        return Type.EXO;
-    }
-
-    @Override
     public Player getPlayer() {
         return player;
     }

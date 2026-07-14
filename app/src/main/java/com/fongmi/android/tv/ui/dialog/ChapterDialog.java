@@ -8,7 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
-import androidx.media3.common.MediaChapter;
+import com.fongmi.android.tv.player.model.MediaChapter;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;

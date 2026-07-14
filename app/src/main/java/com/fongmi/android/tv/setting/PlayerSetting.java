@@ -8,8 +8,6 @@ import com.github.catvod.utils.Prefers;
 
 public class PlayerSetting {
 
-    public static final int ENGINE_EXO = 0;
-    public static final int ENGINE_MPV = 1;
     public static final int RENDER_SURFACE = 0;
     public static final int RENDER_TEXTURE = 1;
     public static final int MIN_SCALE = 0;
@@ -21,42 +19,13 @@ public class PlayerSetting {
     private static final float MIN_SPEED = 2.0f;
     private static final float MAX_SPEED = 5.0f;
 
-    public static int getEngine() {
-        return Math.clamp(Prefers.getInt("player_engine", ENGINE_EXO), ENGINE_EXO, ENGINE_MPV);
-    }
-
-    public static void putEngine(int engine) {
-        Prefers.put("player_engine", Math.clamp(engine, ENGINE_EXO, ENGINE_MPV));
-        if (!isMpv() && isTunnel()) Prefers.put("render", RENDER_SURFACE);
-    }
-
-    public static boolean isMpv() {
-        return getEngine() == ENGINE_MPV;
-    }
-
-    public static boolean isMpvGpuNext() {
-        return Prefers.getBoolean("mpv_gpu_next");
-    }
-
-    public static void putMpvGpuNext(boolean gpuNext) {
-        Prefers.put("mpv_gpu_next", gpuNext);
-    }
-
-    public static boolean isMpvVulkan() {
-        return Prefers.getBoolean("mpv_vulkan");
-    }
-
-    public static void putMpvVulkan(boolean vulkan) {
-        Prefers.put("mpv_vulkan", vulkan);
-    }
-
     public static int getRender() {
         return Math.clamp(Prefers.getInt("render", RENDER_SURFACE), RENDER_SURFACE, RENDER_TEXTURE);
     }
 
     public static void putRender(int render) {
         Prefers.put("render", Math.clamp(render, RENDER_SURFACE, RENDER_TEXTURE));
-        if (!isMpv() && isTunnel() && getRender() == RENDER_TEXTURE) Prefers.put("tunnel", false);
+        if (isTunnel() && getRender() == RENDER_TEXTURE) Prefers.put("tunnel", false);
     }
 
     public static boolean isTunnel() {
@@ -65,7 +34,7 @@ public class PlayerSetting {
 
     public static void putTunnel(boolean tunnel) {
         Prefers.put("tunnel", tunnel);
-        if (!isMpv() && tunnel) Prefers.put("render", RENDER_SURFACE);
+        if (tunnel) Prefers.put("render", RENDER_SURFACE);
     }
 
     public static boolean isTunnelingEnabled() {

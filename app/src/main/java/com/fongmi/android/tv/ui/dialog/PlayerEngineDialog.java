@@ -14,15 +14,12 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.databinding.DialogPlayerEngineBinding;
 import com.fongmi.android.tv.playback.PlaybackAction;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.ui.activity.PlaybackActivity;
 
 public final class PlayerEngineDialog extends BaseBottomSheetDialog {
 
     private DialogPlayerEngineBinding binding;
-    private PlayerManager player;
     private CharSequence title;
-    private TextView target;
 
     public static void setText(TextView view) {
         setText(view, null);
@@ -36,14 +33,8 @@ public final class PlayerEngineDialog extends BaseBottomSheetDialog {
     public static void show(FragmentActivity activity, TextView view, PlayerManager player, CharSequence title) {
         for (Fragment fragment : activity.getSupportFragmentManager().getFragments()) if (fragment instanceof PlayerEngineDialog) return;
         PlayerEngineDialog dialog = new PlayerEngineDialog();
-        dialog.player = player;
-        dialog.target = view;
         dialog.title = title;
         dialog.show(activity.getSupportFragmentManager(), null);
-    }
-
-    private static int getCurrentEngine(PlayerManager player) {
-        return PlaybackAction.getEngine(player);
     }
 
     @Override
@@ -53,16 +44,18 @@ public final class PlayerEngineDialog extends BaseBottomSheetDialog {
 
     @Override
     protected void initView() {
-        setSelected();
-        getSelectedView().requestFocus();
+        binding.debug.setVisibility(View.GONE);
+        binding.exo.setSelected(true);
+        PlaybackActivity activity = getPlaybackActivity();
+        binding.debug.setSelected(activity != null && activity.isDebugViewVisible());
+        binding.exo.requestFocus();
     }
 
     @Override
     protected void initEvent() {
         binding.debug.setOnClickListener(this::selectDebug);
         binding.other.setOnClickListener(this::selectOther);
-        binding.exo.setOnClickListener(view -> selectEngine(PlayerSetting.ENGINE_EXO));
-        binding.mpv.setOnClickListener(view -> selectEngine(PlayerSetting.ENGINE_MPV));
+        binding.exo.setOnClickListener(view -> dismiss());
     }
 
     private void selectDebug(View view) {
@@ -77,28 +70,6 @@ public final class PlayerEngineDialog extends BaseBottomSheetDialog {
         dismiss();
         PlaybackActivity activity = getPlaybackActivity();
         if (activity != null) activity.chooseOtherPlayer(title);
-    }
-
-    private void selectEngine(int engine) {
-        PlaybackActivity activity = getPlaybackActivity();
-        boolean changed = engine != getCurrentEngine(player);
-        if (changed && activity != null) activity.hideDebugView();
-        if (player == null) PlayerSetting.putEngine(engine);
-        else player.setEngine(engine);
-        setText(target, player);
-        dismiss();
-    }
-
-    private void setSelected() {
-        int engine = getCurrentEngine(player);
-        PlaybackActivity activity = getPlaybackActivity();
-        binding.exo.setSelected(engine == PlayerSetting.ENGINE_EXO);
-        binding.mpv.setSelected(engine == PlayerSetting.ENGINE_MPV);
-        binding.debug.setSelected(activity != null && activity.isDebugViewVisible());
-    }
-
-    private View getSelectedView() {
-        return getCurrentEngine(player) == PlayerSetting.ENGINE_MPV ? binding.mpv : binding.exo;
     }
 
     private PlaybackActivity getPlaybackActivity() {

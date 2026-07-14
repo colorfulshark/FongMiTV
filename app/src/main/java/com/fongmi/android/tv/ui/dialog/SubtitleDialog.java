@@ -74,34 +74,49 @@ public final class SubtitleDialog extends BaseBottomSheetDialog {
     }
 
     private void onUp(View view) {
-        subtitleView.addPosition(0.005f);
-        PlayerSetting.putSubtitlePosition(subtitleView.getPosition());
+        float value = Math.clamp(getPosition() + 0.005f, 0f, 0.5f);
+        subtitleView.setBottomPaddingFraction(value);
+        PlayerSetting.putSubtitlePosition(value);
         applySubtitleStyle();
     }
 
     private void onDown(View view) {
-        subtitleView.subPosition(0.005f);
-        PlayerSetting.putSubtitlePosition(subtitleView.getPosition());
+        float value = Math.clamp(getPosition() - 0.005f, 0f, 0.5f);
+        subtitleView.setBottomPaddingFraction(value);
+        PlayerSetting.putSubtitlePosition(value);
         applySubtitleStyle();
     }
 
     private void onLarge(View view) {
-        subtitleView.addTextSize(0.002f);
-        PlayerSetting.putSubtitleTextSize(subtitleView.getTextSize());
+        float value = Math.clamp(getTextSize() + 0.002f, 0.01f, 0.2f);
+        subtitleView.setFractionalTextSize(value);
+        PlayerSetting.putSubtitleTextSize(value);
         applySubtitleStyle();
     }
 
     private void onSmall(View view) {
-        subtitleView.subTextSize(0.002f);
-        PlayerSetting.putSubtitleTextSize(subtitleView.getTextSize());
+        float value = Math.clamp(getTextSize() - 0.002f, 0.01f, 0.2f);
+        subtitleView.setFractionalTextSize(value);
+        PlayerSetting.putSubtitleTextSize(value);
         applySubtitleStyle();
     }
 
     private void onReset(View view) {
         PlayerSetting.putSubtitleTextSize(0.0f);
         PlayerSetting.putSubtitlePosition(0.0f);
-        subtitleView.reset();
+        subtitleView.setFractionalTextSize(SubtitleView.DEFAULT_TEXT_SIZE_FRACTION);
+        subtitleView.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION);
         applySubtitleStyle();
+    }
+
+    private float getPosition() {
+        float value = PlayerSetting.getSubtitlePosition();
+        return value == 0 ? SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION : value;
+    }
+
+    private float getTextSize() {
+        float value = PlayerSetting.getSubtitleTextSize();
+        return value == 0 ? SubtitleView.DEFAULT_TEXT_SIZE_FRACTION : value;
     }
 
     private void applySubtitleStyle() {

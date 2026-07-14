@@ -2,7 +2,7 @@ package com.fongmi.android.tv.setting;
 
 import android.text.TextUtils;
 
-import androidx.media3.ui.danmaku.DanmakuConfig;
+import com.fongmi.android.tv.player.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.github.catvod.utils.Prefers;
@@ -37,7 +37,7 @@ public class DanmakuSetting {
     private static final int MAX_MAX_FIXED_LINES = 10;
 
     public static boolean isLoad() {
-        return Prefers.getBoolean("danmaku_load");
+        return false;
     }
 
     public static void putLoad(boolean danmakuLoad) {
@@ -70,7 +70,7 @@ public class DanmakuSetting {
     }
 
     public static boolean isShow() {
-        return Prefers.getBoolean("danmaku_show", true);
+        return false;
     }
 
     public static void putShow(boolean danmakuShow) {

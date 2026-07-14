@@ -31,8 +31,6 @@
   private java.nio.ByteBuffer growOutputBuffer(androidx.media3.decoder.SimpleDecoderOutputBuffer, int);
 }
 
--keep class is.xyz.mpv.MPVLib { *; }
-
 -keep class androidx.media3.decoder.VideoDecoderOutputBuffer { *; }
 -keep class androidx.media3.decoder.DecoderInputBuffer { *; }
 -keep class androidx.media3.decoder.av1.Dav1dDecoder { *; }
@@ -196,11 +194,6 @@
   <init>(androidx.media3.exoplayer.ExoPlayer, android.widget.TextView);
   void start();
   void stop();
-}
-
--dontnote androidx.media3.mpvplayer.MpvPlayer
--keepclassmembers class androidx.media3.mpvplayer.MpvPlayer {
-  boolean toggleGeneralStats();
 }
 
 -keepnames class androidx.media3.transformer.CompositionPlayer {}

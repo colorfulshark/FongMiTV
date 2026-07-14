@@ -20,7 +20,7 @@
         android:nextFocusUp="@id/video"
         android:nextFocusDown="@id/flag">
 
-        <androidx.media3.ui.PlayerView
+        <com.fongmi.android.tv.ui.custom.PlayerView
             android:id="@+id/player"
             style="@style/Player.Vod"
             android:layout_width="match_parent"

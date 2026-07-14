@@ -5,15 +5,15 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.media3.common.C;
-import androidx.media3.common.MediaChapter;
-import androidx.media3.common.MediaEdition;
+import com.fongmi.android.tv.player.model.MediaChapter;
+import com.fongmi.android.tv.player.model.MediaEdition;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.VideoSize;
-import androidx.media3.ui.danmaku.DanmakuConfig;
+import com.fongmi.android.tv.player.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
@@ -90,11 +90,11 @@ public class PlayerManager implements ParseCallback {
     }
 
     public List<MediaChapter> getCurrentMediaChapters() {
-        return player.getCurrentMediaChapters();
+        return List.of();
     }
 
     public List<MediaEdition> getCurrentMediaEditions() {
-        return player.getCurrentMediaEditions();
+        return List.of();
     }
 
     public MediaItem getCurrentMediaItem() {
@@ -220,17 +220,6 @@ public class PlayerManager implements ParseCallback {
         return ResUtil.getStringArray(R.array.select_decode)[decode];
     }
 
-    public int getEngine() {
-        return engine.getType() == PlayerEngine.Type.MPV ? PlayerSetting.ENGINE_MPV : PlayerSetting.ENGINE_EXO;
-    }
-
-    public void setEngine(int targetEngine) {
-        int oldEngine = getEngine();
-        PlayerSetting.putEngine(targetEngine);
-        if (oldEngine == targetEngine || isEmpty()) return;
-        startCurrent();
-    }
-
     public String getPositionTime(long delta) {
         return Util.timeMs(Math.clamp(getPosition() + delta, 0, Math.max(0, getDuration())));
     }
@@ -255,11 +244,11 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void selectChapter(MediaChapter chapter) {
-        player.selectChapter(chapter);
+        if (chapter.timeUs != C.TIME_UNSET) player.seekTo(chapter.timeUs / 1000);
     }
 
     public void selectEdition(MediaEdition edition) {
-        player.selectEdition(edition);
+        // Official Media3 has no edition-selection API.
     }
 
     public void setDanmakuConfig(DanmakuConfig config) {
@@ -345,19 +334,19 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getTextOffsetMs() {
-        return player.isCommandAvailable(Player.COMMAND_GET_TEXT_OFFSET) ? player.getTextOffsetMs() : 0;
+        return 0;
     }
 
     public void setTextOffsetMs(long offsetMs) {
-        if (player.isCommandAvailable(Player.COMMAND_SET_TEXT_OFFSET)) player.setTextOffsetMs(offsetMs);
+        // Official Media3 Player does not expose a subtitle-offset command.
     }
 
     public long getAudioOffsetMs() {
-        return player.isCommandAvailable(Player.COMMAND_GET_AUDIO_OFFSET) ? player.getAudioOffsetMs() : 0;
+        return 0;
     }
 
     public void setAudioOffsetMs(long offsetMs) {
-        if (player.isCommandAvailable(Player.COMMAND_SET_AUDIO_OFFSET)) player.setAudioOffsetMs(offsetMs);
+        // Official Media3 Player does not expose an audio-offset command.
     }
 
     public void reset() {
@@ -545,16 +534,6 @@ public class PlayerManager implements ParseCallback {
             setTrack(Track.find(getKey()));
             callback.onTracksChanged();
             initTrack = true;
-        }
-
-        @Override
-        public void onMediaChaptersChanged(@NonNull List<MediaChapter> chapters) {
-            callback.onMediaOptionsChanged();
-        }
-
-        @Override
-        public void onMediaEditionsChanged(@NonNull List<MediaEdition> editions) {
-            callback.onMediaOptionsChanged();
         }
 
         @Override

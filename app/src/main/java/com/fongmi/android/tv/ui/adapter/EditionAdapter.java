@@ -6,7 +6,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.media3.common.C;
-import androidx.media3.common.MediaEdition;
+import com.fongmi.android.tv.player.model.MediaEdition;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.databinding.AdapterEditionBinding;
