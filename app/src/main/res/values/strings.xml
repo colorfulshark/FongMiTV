@@ -155,6 +155,7 @@
     <string name="player_libass">libass</string>
     <string name="player_caption">Caption style</string>
     <string name="player_background">Background play</string>
+    <string name="player_auto_frame_rate">Automatic frame rate matching</string>
     <string name="player_frame_rate">Frame rate display</string>
     <string name="player_frame_rate_info">Video: %1$.1f fps\nScreen: %2$.1f Hz</string>
     <string name="player_audio_pass_through">Audio passthrough</string>
@@ -241,6 +242,12 @@
     <string-array name="select_render">
         <item>Surface</item>
         <item>Texture</item>
+    </string-array>
+
+    <string-array name="select_auto_frame_rate">
+        <item>Off</item>
+        <item>Seamless only</item>
+        <item>Always</item>
     </string-array>
 
     <string-array name="select_size">

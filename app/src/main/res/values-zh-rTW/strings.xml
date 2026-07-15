@@ -154,6 +154,7 @@
     <string name="player_libass">字幕渲染</string>
     <string name="player_caption">字幕樣式</string>
     <string name="player_background">背景播放</string>
+    <string name="player_auto_frame_rate">自動幀率匹配</string>
     <string name="player_frame_rate">幀率顯示</string>
     <string name="player_frame_rate_info">影片：%1$.1f fps\n螢幕：%2$.1f Hz</string>
     <string name="player_audio_pass_through">音訊直通</string>
@@ -235,6 +236,12 @@
     <string-array name="select_decode">
         <item>軟解</item>
         <item>硬解</item>
+    </string-array>
+
+    <string-array name="select_auto_frame_rate">
+        <item>關閉</item>
+        <item>僅無縫匹配</item>
+        <item>始終匹配</item>
     </string-array>
 
     <string-array name="select_size">

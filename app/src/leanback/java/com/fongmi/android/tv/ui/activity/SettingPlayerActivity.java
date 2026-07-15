@@ -26,6 +26,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
     private ActivitySettingPlayerBinding mBinding;
     private DecimalFormat format;
     private String[] caption;
+    private String[] autoFrameRate;
     private String[] render;
     private String[] scale;
 
@@ -47,6 +48,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
         mBinding.backgroundText.setText(Setting.getSwitch(PlayerSetting.isBackgroundOn()));
+        mBinding.autoFrameRateText.setText((autoFrameRate = ResUtil.getStringArray(R.array.select_auto_frame_rate))[PlayerSetting.getAutoFrameRate()]);
         mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
@@ -60,6 +62,7 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
         mBinding.caption.setOnLongClickListener(this::onCaption);
         mBinding.speed.setOnClickListener(this::onSpeed);
         mBinding.background.setOnClickListener(this::onBackground);
+        mBinding.autoFrameRate.setOnClickListener(this::onAutoFrameRate);
         mBinding.frameRate.setOnClickListener(this::onFrameRate);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.preload.setOnClickListener(this::onPreloadSetting);
@@ -118,6 +121,12 @@ public class SettingPlayerActivity extends BaseActivity implements UaListener, S
     private void onFrameRate(View view) {
         PlayerSetting.putFrameRateVisible(!PlayerSetting.isFrameRateVisible());
         mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
+    }
+
+    private void onAutoFrameRate(View view) {
+        int mode = (PlayerSetting.getAutoFrameRate() + 1) % autoFrameRate.length;
+        PlayerSetting.putAutoFrameRate(mode);
+        mBinding.autoFrameRateText.setText(autoFrameRate[mode]);
     }
 
     private void setAdblock(View view) {

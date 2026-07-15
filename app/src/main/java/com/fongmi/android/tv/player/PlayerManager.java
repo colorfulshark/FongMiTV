@@ -299,14 +299,17 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void play() {
+        PlaybackIntentTracker.record(player);
         player.play();
     }
 
     public void pause() {
+        PlaybackIntentTracker.record(player);
         player.pause();
     }
 
     public void stop() {
+        PlaybackIntentTracker.record(player);
         engine.stop();
         stopParse();
     }
@@ -326,6 +329,7 @@ public class PlayerManager implements ParseCallback {
     public void replay(long positionMs) {
         if (positionMs == C.TIME_UNSET) player.seekToDefaultPosition();
         else player.seekTo(positionMs);
+        PlaybackIntentTracker.record(player);
         player.play();
     }
 

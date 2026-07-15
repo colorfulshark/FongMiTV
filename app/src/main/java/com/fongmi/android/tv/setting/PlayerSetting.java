@@ -10,6 +10,9 @@ public class PlayerSetting {
 
     public static final int RENDER_SURFACE = 0;
     public static final int RENDER_TEXTURE = 1;
+    public static final int AUTO_FRAME_RATE_OFF = 0;
+    public static final int AUTO_FRAME_RATE_SEAMLESS = 1;
+    public static final int AUTO_FRAME_RATE_ALWAYS = 2;
     public static final int MIN_SCALE = 0;
     public static final int MAX_SCALE = 4;
     private static final int MIN_SIZE = 0;
@@ -99,6 +102,14 @@ public class PlayerSetting {
 
     public static void putFrameRateVisible(boolean visible) {
         Prefers.put("frame_rate_visible", visible);
+    }
+
+    public static int getAutoFrameRate() {
+        return Math.clamp(Prefers.getInt("auto_frame_rate", AUTO_FRAME_RATE_SEAMLESS), AUTO_FRAME_RATE_OFF, AUTO_FRAME_RATE_ALWAYS);
+    }
+
+    public static void putAutoFrameRate(int mode) {
+        Prefers.put("auto_frame_rate", Math.clamp(mode, AUTO_FRAME_RATE_OFF, AUTO_FRAME_RATE_ALWAYS));
     }
 
     public static float getSubtitleTextSize() {
