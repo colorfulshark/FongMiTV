@@ -19,6 +19,13 @@ public interface PlayerEngine {
 
     boolean setDecode(int decode);
 
+    default long getTextOffsetMs() {
+        return 0;
+    }
+
+    default void setTextOffsetMs(long offsetMs) {
+    }
+
     void start(PlaySpec spec, long startPositionMs);
 
     default void stop() {

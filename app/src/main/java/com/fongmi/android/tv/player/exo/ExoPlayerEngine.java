@@ -16,12 +16,14 @@ public class ExoPlayerEngine implements PlayerEngine {
     private final ErrorMsgProvider provider;
     private final Player.Listener listener;
     private final PreCache preCache;
+    private final SubtitleOffset subtitleOffset;
     private ExoPlayer player;
     private PlaySpec spec;
     private int decode;
 
     public ExoPlayerEngine(int decode, Player.Listener listener) {
-        this.player = ExoUtil.buildPlayer(decode, listener);
+        this.subtitleOffset = new SubtitleOffset();
+        this.player = ExoUtil.buildPlayer(decode, listener, subtitleOffset);
         this.provider = new ErrorMsgProvider();
         this.preCache = new PreCache();
         this.listener = listener;
@@ -43,13 +45,23 @@ public class ExoPlayerEngine implements PlayerEngine {
     public Player rebuild() {
         preCache.stop();
         player.release();
-        return player = ExoUtil.buildPlayer(decode, listener);
+        return player = ExoUtil.buildPlayer(decode, listener, subtitleOffset);
     }
 
     @Override
     public boolean setDecode(int decode) {
         this.decode = decode;
         return true;
+    }
+
+    @Override
+    public long getTextOffsetMs() {
+        return subtitleOffset.getMs();
+    }
+
+    @Override
+    public void setTextOffsetMs(long offsetMs) {
+        subtitleOffset.setMs(offsetMs);
     }
 
     @Override

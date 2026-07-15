@@ -43,6 +43,7 @@ import java.util.Map;
 public class PlayerManager implements ParseCallback {
 
     private final Runnable runnable;
+    private final Runnable textOffsetRefresh;
     private final Callback callback;
     private PlayerEngine engine;
     private VideoSize videoSize;
@@ -60,6 +61,7 @@ public class PlayerManager implements ParseCallback {
     public PlayerManager(Callback callback) {
         this.callback = callback;
         this.runnable = this::onPlayTimeout;
+        this.textOffsetRefresh = this::refreshTextOffset;
         this.decode = PlayerEngine.HARD;
         this.engine = PlayerEngineFactory.create(decode, listener);
         this.player = engine.getPlayer();
@@ -74,7 +76,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void release() {
-        App.removeCallbacks(runnable);
+        App.removeCallbacks(runnable, textOffsetRefresh);
         if (player != null) player.removeListener(listener);
         if (engine != null) engine.release();
         engine = null;
@@ -338,11 +340,20 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getTextOffsetMs() {
-        return 0;
+        return engine.getTextOffsetMs();
     }
 
     public void setTextOffsetMs(long offsetMs) {
-        // Official Media3 Player does not expose a subtitle-offset command.
+        if (offsetMs == getTextOffsetMs()) return;
+        engine.setTextOffsetMs(offsetMs);
+        App.post(textOffsetRefresh, 250);
+    }
+
+    private void refreshTextOffset() {
+        if (player == null || player.getCurrentMediaItem() == null) return;
+        boolean playWhenReady = player.getPlayWhenReady();
+        startCurrent(player.getCurrentPosition());
+        if (!playWhenReady) pause();
     }
 
     public long getAudioOffsetMs() {
@@ -354,7 +365,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void reset() {
-        App.removeCallbacks(runnable);
+        App.removeCallbacks(runnable, textOffsetRefresh);
         retry = 0;
     }
 

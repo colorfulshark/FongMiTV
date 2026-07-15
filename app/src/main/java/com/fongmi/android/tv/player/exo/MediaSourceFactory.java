@@ -39,12 +39,18 @@ public class MediaSourceFactory implements MediaSource.Factory {
     private static Cache cache;
 
     private final DefaultMediaSourceFactory defaultMediaSourceFactory;
+    private final SubtitleOffset subtitleOffset;
     private HttpDataSource.Factory httpDataSourceFactory;
     private DataSource.Factory dataSourceFactory;
     private ExtractorsFactory extractorsFactory;
 
     public MediaSourceFactory() {
-        defaultMediaSourceFactory = new DefaultMediaSourceFactory(getDataSourceFactory(), getExtractorsFactory());
+        this(null);
+    }
+
+    MediaSourceFactory(SubtitleOffset subtitleOffset) {
+        this.subtitleOffset = subtitleOffset;
+        defaultMediaSourceFactory = new DefaultMediaSourceFactory(getDataSourceFactory(), getExtractorsFactory()).setLoadOnlySelectedTracks(true);
     }
 
     static DataSource.Factory createUpstreamDataSourceFactory(Map<String, String> headers) {
@@ -93,7 +99,11 @@ public class MediaSourceFactory implements MediaSource.Factory {
     @Override
     public MediaSource createMediaSource(@NonNull MediaItem mediaItem) {
         getHttpDataSourceFactory().setDefaultRequestProperties(ExoUtil.extractHeaders(mediaItem));
-        return defaultMediaSourceFactory.createMediaSource(mediaItem);
+        MediaSource mediaSource = defaultMediaSourceFactory.createMediaSource(mediaItem);
+        long offsetUs = subtitleOffset == null ? 0 : subtitleOffset.getUs();
+        if (offsetUs == 0) return mediaSource;
+        MediaSource prerollSource = offsetUs > 0 ? defaultMediaSourceFactory.createMediaSource(mediaItem) : null;
+        return new SubtitleOffsetMediaSource(mediaSource, prerollSource, offsetUs);
     }
 
     private ExtractorsFactory getExtractorsFactory() {

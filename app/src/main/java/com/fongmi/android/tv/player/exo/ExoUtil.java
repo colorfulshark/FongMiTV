@@ -35,9 +35,9 @@ public class ExoUtil {
 
     private static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
-    public static ExoPlayer buildPlayer(int decode, Player.Listener listener) {
+    public static ExoPlayer buildPlayer(int decode, Player.Listener listener, SubtitleOffset subtitleOffset) {
         int frameRateStrategy = PlayerSetting.getAutoFrameRate() == PlayerSetting.AUTO_FRAME_RATE_SEAMLESS ? C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_ONLY_IF_SEAMLESS : C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF;
-        ExoPlayer player = new ExoPlayer.Builder(App.get()).setTrackSelector(buildTrackSelector()).setRenderersFactory(buildPlaybackRenderersFactory(decode)).setMediaSourceFactory(buildMediaSourceFactory()).setVideoChangeFrameRateStrategy(frameRateStrategy).build();
+        ExoPlayer player = new ExoPlayer.Builder(App.get()).setTrackSelector(buildTrackSelector()).setRenderersFactory(buildPlaybackRenderersFactory(decode)).setMediaSourceFactory(buildMediaSourceFactory(subtitleOffset)).setVideoChangeFrameRateStrategy(frameRateStrategy).build();
         if (BuildConfig.DEBUG) player.addAnalyticsListener(new EventLogger());
         player.setAudioAttributes(AudioAttributes.DEFAULT, true);
         player.setHandleAudioBecomingNoisy(true);
@@ -97,7 +97,7 @@ public class ExoUtil {
         return builder.build();
     }
 
-    private static MediaSource.Factory buildMediaSourceFactory() {
-        return new MediaSourceFactory();
+    private static MediaSource.Factory buildMediaSourceFactory(SubtitleOffset subtitleOffset) {
+        return new MediaSourceFactory(subtitleOffset);
     }
 }
