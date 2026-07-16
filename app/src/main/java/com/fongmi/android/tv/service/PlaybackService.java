@@ -64,7 +64,11 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
 
     private NavigationCallback navigationCallback;
     private MediaLibrarySession session;
-    private Runnable onNewBinding;
+    private BindingCallback activeBinding;
+    private BindingCallback pendingBinding;
+    private boolean bindingTransitionInProgress;
+    private Runnable pendingBindingCompletion;
+    private Runnable pendingBindingSuperseded;
     private PlayerManager player;
     private String navigationKey;
     private Player sessionPlayer;
@@ -73,9 +77,37 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
         return running;
     }
 
-    public void replaceBinding(Runnable callback) {
-        if (onNewBinding != null) onNewBinding.run();
-        onNewBinding = callback;
+    public void replaceBinding(BindingCallback callback, Runnable completion, Runnable superseded) {
+        Runnable previousSuperseded = pendingBindingSuperseded;
+        pendingBinding = callback;
+        pendingBindingCompletion = completion;
+        pendingBindingSuperseded = superseded;
+        if (previousSuperseded != null) previousSuperseded.run();
+        if (bindingTransitionInProgress) return;
+        bindingTransitionInProgress = true;
+        if (activeBinding != null) activeBinding.close(this::completeBindingTransition);
+        else completeBindingTransition();
+    }
+
+    public void cancelBinding(BindingCallback callback) {
+        if (pendingBinding == callback) {
+            pendingBinding = null;
+            pendingBindingCompletion = null;
+            pendingBindingSuperseded = null;
+        }
+        if (activeBinding == callback) activeBinding = null;
+    }
+
+    private void completeBindingTransition() {
+        bindingTransitionInProgress = false;
+        BindingCallback callback = pendingBinding;
+        Runnable completion = pendingBindingCompletion;
+        pendingBinding = null;
+        pendingBindingCompletion = null;
+        pendingBindingSuperseded = null;
+        if (callback == null) return;
+        activeBinding = callback;
+        if (completion != null) completion.run();
     }
 
     public PlayerManager player() {
@@ -644,6 +676,11 @@ public class PlaybackService extends MediaLibraryService implements MediaLibrary
 
         default void onAudio() {
         }
+    }
+
+    public interface BindingCallback {
+
+        void close(Runnable completion);
     }
 
     public class LocalBinder extends Binder {
