@@ -38,16 +38,21 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     private final View hostView;
     private final Runnable switchTimeout = this::finishDisplaySwitch;
     private final Runnable switchSettled = this::finishDisplaySwitch;
+    private final Runnable restoreTimeout = this::finishDisplayRestore;
+    private final Runnable restoreSettled = this::finishDisplayRestoreIfSettled;
 
     private int appliedMode = PlayerSetting.AUTO_FRAME_RATE_OFF;
+    private int originalDisplayModeId;
     private int originalPreferredDisplayModeId;
     private boolean originalDisplayModeCaptured;
     private boolean displayListenerRegistered;
+    private boolean appliedWithoutPlayer;
     private boolean resumeAfterSwitch;
     private float appliedFrameRate;
     private long playbackIntentVersionAtSwitch;
     private Player switchingPlayer;
     private View appliedSurfaceView;
+    private Runnable displayRestoreCompletion;
 
     public AutoFrameRateManager(@NonNull View hostView) {
         this.hostView = hostView;
@@ -79,22 +84,31 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     }
 
     public void apply(@Nullable Player player, @Nullable View surfaceView, float measuredFrameRate) {
+        apply(player, surfaceView, measuredFrameRate, false);
+    }
+
+    public void preMatch(@Nullable View surfaceView) {
+        apply(null, surfaceView, 0, true);
+    }
+
+    private void apply(@Nullable Player player, @Nullable View surfaceView, float measuredFrameRate, boolean preMatch) {
         configurePlayer(player);
         int mode = PlayerSetting.getAutoFrameRate();
-        if (player == null || mode == PlayerSetting.AUTO_FRAME_RATE_OFF) {
+        if (mode == PlayerSetting.AUTO_FRAME_RATE_OFF || (player == null && (!preMatch || mode != PlayerSetting.AUTO_FRAME_RATE_ALWAYS))) {
             detachSurface(surfaceView);
             return;
         }
 
-        float contentFrameRate = getContentFrameRate(player);
+        float playbackSpeed = player == null ? 1f : player.getPlaybackParameters().speed;
+        float contentFrameRate = player == null ? Format.NO_VALUE : getContentFrameRate(player);
         float requestedFrameRate;
         if (contentFrameRate > 0) {
-            requestedFrameRate = contentFrameRate * player.getPlaybackParameters().speed;
+            requestedFrameRate = contentFrameRate * playbackSpeed;
         } else if (measuredFrameRate > 0) {
             // Measured FPS is sampled against elapsed real time, so playback speed is already reflected.
             requestedFrameRate = measuredFrameRate;
         } else if (mode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS) {
-            requestedFrameRate = DEFAULT_ALWAYS_FRAME_RATE * player.getPlaybackParameters().speed;
+            requestedFrameRate = DEFAULT_ALWAYS_FRAME_RATE * playbackSpeed;
         } else {
             return;
         }
@@ -108,22 +122,21 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
             return;
         }
 
-        if (appliedMode == mode && appliedSurfaceView == surfaceView && Math.abs(appliedFrameRate - requestedFrameRate) < RATE_EPSILON) return;
+        boolean sameRequest = appliedMode == mode && appliedSurfaceView == surfaceView && Math.abs(appliedFrameRate - requestedFrameRate) < RATE_EPSILON;
+        if (sameRequest && !(appliedWithoutPlayer && player != null)) return;
         boolean requestWillSwitch = !isCurrentRefreshRateCompatible(requestedFrameRate);
-        boolean requested;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            boolean canSwitchNonSeamlessly = displayManager != null && displayManager.getMatchContentFrameRateUserPreference() == DisplayManager.MATCH_CONTENT_FRAMERATE_ALWAYS;
-            if (requestWillSwitch && canSwitchNonSeamlessly) beginDisplaySwitch(player);
-            requested = setSurfaceFrameRate(surfaceView, requestedFrameRate, Surface.CHANGE_FRAME_RATE_ALWAYS);
-        } else {
-            Display.Mode targetMode = findBestDisplayMode(requestedFrameRate);
-            if (requestWillSwitch && targetMode != null) beginDisplaySwitch(player);
-            requested = setPreferredDisplayMode(targetMode);
-        }
+        Display.Mode targetMode = findBestDisplayMode(requestedFrameRate);
+        boolean systemAllowsSurfaceSwitch = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && displayManager != null && displayManager.getMatchContentFrameRateUserPreference() == DisplayManager.MATCH_CONTENT_FRAMERATE_ALWAYS;
+        if (player != null && requestWillSwitch && (targetMode != null || systemAllowsSurfaceSwitch)) beginDisplaySwitch(player);
+        boolean modeRequested = setPreferredDisplayMode(targetMode);
+        boolean surfaceRequested = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && setSurfaceFrameRate(surfaceView, requestedFrameRate, Surface.CHANGE_FRAME_RATE_ALWAYS);
+        if (surfaceRequested && !originalDisplayModeCaptured) captureOriginalDisplayMode();
+        boolean requested = modeRequested || surfaceRequested;
         if (!requested) finishDisplaySwitch();
         appliedMode = requested ? mode : PlayerSetting.AUTO_FRAME_RATE_OFF;
         appliedFrameRate = requested ? requestedFrameRate : 0;
         appliedSurfaceView = requested ? surfaceView : null;
+        appliedWithoutPlayer = requested && player == null;
     }
 
     public void clearSurface(@Nullable View currentSurfaceView) {
@@ -138,6 +151,29 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         clear(currentSurfaceView, true, false);
     }
 
+    public void restoreForExit(@Nullable View currentSurfaceView, @NonNull Runnable completion) {
+        boolean restoreRequested = appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS || originalDisplayModeCaptured;
+        if (appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS) clearSurfaceFrameRate(appliedSurfaceView != null ? appliedSurfaceView : currentSurfaceView);
+        cancelDisplaySwitch();
+        appliedMode = PlayerSetting.AUTO_FRAME_RATE_OFF;
+        appliedFrameRate = 0;
+        appliedSurfaceView = null;
+        appliedWithoutPlayer = false;
+        if (!restoreRequested) {
+            completion.run();
+            return;
+        }
+        displayRestoreCompletion = completion;
+        registerDisplayListener();
+        restorePreferredDisplayMode();
+        if (isOriginalDisplayModeRestored()) mainHandler.postDelayed(restoreSettled, 250L);
+        mainHandler.postDelayed(restoreTimeout, DISPLAY_SWITCH_TIMEOUT_MS);
+    }
+
+    public boolean hasActiveDisplayRequest() {
+        return appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS || originalDisplayModeCaptured;
+    }
+
     private void clear(@Nullable View currentSurfaceView, boolean restoreDisplayMode, boolean allowResume) {
         if (appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS) clearSurfaceFrameRate(appliedSurfaceView != null ? appliedSurfaceView : currentSurfaceView);
         if (restoreDisplayMode) restorePreferredDisplayMode();
@@ -146,6 +182,7 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         appliedMode = PlayerSetting.AUTO_FRAME_RATE_OFF;
         appliedFrameRate = 0;
         appliedSurfaceView = null;
+        appliedWithoutPlayer = false;
     }
 
     private void clearAppRequest() {
@@ -209,15 +246,22 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     private boolean setPreferredDisplayMode(@Nullable Display.Mode mode) {
         Activity activity = findActivity(hostView.getContext());
         if (activity == null || mode == null) return false;
+        captureOriginalDisplayMode();
         WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
-        if (!originalDisplayModeCaptured) {
-            originalPreferredDisplayModeId = attributes.preferredDisplayModeId;
-            originalDisplayModeCaptured = true;
-        }
         if (attributes.preferredDisplayModeId == mode.getModeId()) return true;
         attributes.preferredDisplayModeId = mode.getModeId();
         activity.getWindow().setAttributes(attributes);
         return true;
+    }
+
+    private void captureOriginalDisplayMode() {
+        if (originalDisplayModeCaptured) return;
+        Activity activity = findActivity(hostView.getContext());
+        if (activity == null) return;
+        Display display = hostView.getDisplay();
+        originalDisplayModeId = display == null ? 0 : display.getMode().getModeId();
+        originalPreferredDisplayModeId = activity.getWindow().getAttributes().preferredDisplayModeId;
+        originalDisplayModeCaptured = true;
     }
 
     private void restorePreferredDisplayMode() {
@@ -228,7 +272,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
             attributes.preferredDisplayModeId = originalPreferredDisplayModeId;
             activity.getWindow().setAttributes(attributes);
         }
-        originalDisplayModeCaptured = false;
     }
 
     private boolean isCurrentRefreshRateCompatible(float frameRate) {
@@ -254,11 +297,14 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         playbackIntentVersionAtSwitch = PlaybackIntentTracker.getVersion(player);
         resumeAfterSwitch = player.getPlayWhenReady();
         if (resumeAfterSwitch) player.setPlayWhenReady(false);
-        if (displayManager != null) {
-            displayManager.registerDisplayListener(this, mainHandler);
-            displayListenerRegistered = true;
-        }
+        registerDisplayListener();
         mainHandler.postDelayed(switchTimeout, DISPLAY_SWITCH_TIMEOUT_MS);
+    }
+
+    private void registerDisplayListener() {
+        if (displayListenerRegistered || displayManager == null) return;
+        displayManager.registerDisplayListener(this, mainHandler);
+        displayListenerRegistered = true;
     }
 
     private void finishDisplaySwitch() {
@@ -272,13 +318,42 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     private void completeDisplaySwitch(boolean allowResume) {
         mainHandler.removeCallbacks(switchTimeout);
         mainHandler.removeCallbacks(switchSettled);
-        if (displayListenerRegistered && displayManager != null) displayManager.unregisterDisplayListener(this);
-        displayListenerRegistered = false;
+        if (displayRestoreCompletion == null) unregisterDisplayListener();
         boolean playbackIntentUnchanged = switchingPlayer != null && PlaybackIntentTracker.getVersion(switchingPlayer) == playbackIntentVersionAtSwitch;
         if (allowResume && switchingPlayer != null && resumeAfterSwitch && playbackIntentUnchanged) switchingPlayer.setPlayWhenReady(true);
         switchingPlayer = null;
         resumeAfterSwitch = false;
         playbackIntentVersionAtSwitch = 0;
+    }
+
+    private void finishDisplayRestore() {
+        mainHandler.removeCallbacks(restoreTimeout);
+        mainHandler.removeCallbacks(restoreSettled);
+        unregisterDisplayListener();
+        Runnable completion = displayRestoreCompletion;
+        displayRestoreCompletion = null;
+        clearOriginalDisplayMode();
+        if (completion != null) completion.run();
+    }
+
+    private void finishDisplayRestoreIfSettled() {
+        if (displayRestoreCompletion != null && isOriginalDisplayModeRestored()) finishDisplayRestore();
+    }
+
+    private void clearOriginalDisplayMode() {
+        originalDisplayModeId = 0;
+        originalPreferredDisplayModeId = 0;
+        originalDisplayModeCaptured = false;
+    }
+
+    private boolean isOriginalDisplayModeRestored() {
+        Display display = hostView.getDisplay();
+        return originalDisplayModeId == 0 || (display != null && display.getMode().getModeId() == originalDisplayModeId);
+    }
+
+    private void unregisterDisplayListener() {
+        if (displayListenerRegistered && displayManager != null) displayManager.unregisterDisplayListener(this);
+        displayListenerRegistered = false;
     }
 
     @Override
@@ -293,8 +368,17 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     public void onDisplayChanged(int displayId) {
         Display display = hostView.getDisplay();
         if (display != null && display.getDisplayId() == displayId) {
-            mainHandler.removeCallbacks(switchSettled);
-            mainHandler.postDelayed(switchSettled, 250L);
+            if (displayRestoreCompletion != null) {
+                if (isOriginalDisplayModeRestored()) {
+                    mainHandler.removeCallbacks(restoreSettled);
+                    mainHandler.postDelayed(restoreSettled, 250L);
+                } else {
+                    mainHandler.removeCallbacks(restoreSettled);
+                }
+            } else {
+                mainHandler.removeCallbacks(switchSettled);
+                mainHandler.postDelayed(switchSettled, 250L);
+            }
         }
     }
 

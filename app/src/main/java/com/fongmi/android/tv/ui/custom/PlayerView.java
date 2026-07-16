@@ -49,6 +49,7 @@ public class PlayerView extends androidx.media3.ui.PlayerView {
     };
     private AutoFrameRateManager autoFrameRateManager;
     private boolean debugViewVisible;
+    private boolean frameRatePreMatch;
     private TextView frameRateView;
     private View videoSurface;
     private int renderedFrameCount;
@@ -141,7 +142,11 @@ public class PlayerView extends androidx.media3.ui.PlayerView {
     @Override
     public void setPlayer(@Nullable Player player) {
         Player oldPlayer = getPlayer();
-        if (oldPlayer == player) return;
+        frameRatePreMatch = false;
+        if (oldPlayer == player) {
+            if (player == null) autoFrameRateManager.detachSurface(videoSurface);
+            return;
+        }
         if (oldPlayer != null && player != null) autoFrameRateManager.release(videoSurface);
         else if (oldPlayer != null) autoFrameRateManager.detachSurface(videoSurface);
         if (oldPlayer != null) oldPlayer.removeListener(frameRateListener);
@@ -153,7 +158,29 @@ public class PlayerView extends androidx.media3.ui.PlayerView {
             if (player.isCommandAvailable(Player.COMMAND_SET_VIDEO_SURFACE)) attachSurface(player, videoSurface);
         }
         resetFrameRateSample();
-        post(this::refreshAutoFrameRate);
+        refreshAutoFrameRate();
+    }
+
+    public void beginAutoFrameRatePreMatch() {
+        frameRatePreMatch = true;
+        refreshAutoFrameRate();
+    }
+
+    public void prepareForExit(@NonNull Runnable completion) {
+        frameRatePreMatch = false;
+        removeCallbacks(frameRateUpdater);
+        Player player = getPlayer();
+        if (player != null) {
+            player.removeListener(frameRateListener);
+            if (player.isCommandAvailable(Player.COMMAND_SET_VIDEO_SURFACE)) clearSurface(player, videoSurface);
+            super.setPlayer(null);
+        }
+        resetFrameRateSample();
+        autoFrameRateManager.restoreForExit(videoSurface, completion);
+    }
+
+    public boolean hasActiveAutoFrameRateRequest() {
+        return autoFrameRateManager.hasActiveDisplayRequest();
     }
 
     public void refreshFrameRateOverlay() {
@@ -206,7 +233,9 @@ public class PlayerView extends androidx.media3.ui.PlayerView {
     }
 
     public void refreshAutoFrameRate() {
-        autoFrameRateManager.apply(getPlayer(), videoSurface, stableMeasuredFrameRate);
+        Player player = getPlayer();
+        if (player != null) autoFrameRateManager.apply(player, videoSurface, stableMeasuredFrameRate);
+        else if (frameRatePreMatch) autoFrameRateManager.preMatch(videoSurface);
     }
 
     private int getRenderedFrameCount() {

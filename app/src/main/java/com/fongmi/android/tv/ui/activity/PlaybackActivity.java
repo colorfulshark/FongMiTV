@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class PlaybackActivity extends BaseActivity implements MediaController.Listener, Player.Listener, ServiceConnection {
 
     private final List<Runnable> foreverObserverRemovers = new ArrayList<>();
+    private final PlaybackService.BindingCallback bindingCallback = this::closePiP;
     private ListenableFuture<MediaController> mControllerFuture;
     private MediaController mController;
     private PlaybackService mService;
@@ -60,6 +61,11 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private boolean bound;
     private boolean stop;
     private boolean lock;
+    private boolean exitInProgress;
+    private boolean exitReady;
+    private boolean serviceConnectionCompleted;
+    private View exitMask;
+    private Runnable exitCompletion;
 
     protected MediaController controller() {
         return mController;
@@ -96,6 +102,48 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     protected boolean isStop() {
         return stop;
+    }
+
+    @Override
+    public void finish() {
+        if (exitInProgress) return;
+        if (exitReady || isFinishing() || !getPlayerView().hasActiveAutoFrameRateRequest()) {
+            finishActivity();
+            return;
+        }
+        exitInProgress = true;
+        if (hasWindowFocus()) {
+            showExitMask();
+            exitMask.postOnAnimation(() -> exitMask.postOnAnimation(this::prepareForExit));
+        } else {
+            prepareForExit();
+        }
+    }
+
+    private void prepareForExit() {
+        getPlayerView().prepareForExit(this::finishAfterFrameRateRestore);
+    }
+
+    private void showExitMask() {
+        ViewGroup decor = (ViewGroup) getWindow().getDecorView();
+        exitMask = new View(this);
+        exitMask.setBackgroundColor(Color.BLACK);
+        exitMask.setClickable(true);
+        exitMask.setFocusable(true);
+        decor.addView(exitMask, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        exitMask.bringToFront();
+    }
+
+    private void finishAfterFrameRateRestore() {
+        exitReady = true;
+        finishActivity();
+    }
+
+    private void finishActivity() {
+        if (!isDestroyed()) super.finish();
+        Runnable completion = exitCompletion;
+        exitCompletion = null;
+        if (completion != null) completion.run();
     }
 
     protected void setStop(boolean stop) {
@@ -335,8 +383,12 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         return mService != null && !isOwner();
     }
 
-    private void closePiP() {
-        if (!isInPictureInPictureMode()) return;
+    private void closePiP(Runnable completion) {
+        if (!isInPictureInPictureMode()) {
+            completion.run();
+            return;
+        }
+        exitCompletion = completion;
         detach();
         finish();
     }
@@ -381,7 +433,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void releasePlaybackService() {
-        if (mService != null) releaseService(isOwner());
+        if (mService != null && serviceConnectionCompleted) releaseService(isOwner());
         detach();
     }
 
@@ -412,7 +464,10 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private void releaseBinding() {
         if (!bound) return;
         bound = false;
-        if (mService != null) mService.removePlayerCallback(mPlayerCallback);
+        if (mService != null) {
+            mService.cancelBinding(bindingCallback);
+            mService.removePlayerCallback(mPlayerCallback);
+        }
         unbindService(this);
         mService = null;
     }
@@ -508,17 +563,30 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
-        mService = ((PlaybackService.LocalBinder) binder).getService();
-        mService.replaceBinding(this::closePiP);
-        mService.setSessionActivity(buildSessionIntent());
-        mService.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
-        mService.addPlayerCallback(mPlayerCallback);
+        PlaybackService service = ((PlaybackService.LocalBinder) binder).getService();
+        mService = service;
+        service.replaceBinding(bindingCallback, () -> completeServiceConnection(service), this::finishSuperseded);
+    }
+
+    private void finishSuperseded() {
+        exitReady = true;
+        finishActivity();
+    }
+
+    private void completeServiceConnection(PlaybackService service) {
+        if (mService != service || isDestroyed() || isFinishing()) return;
+        serviceConnectionCompleted = true;
+        getPlayerView().beginAutoFrameRatePreMatch();
+        service.setSessionActivity(buildSessionIntent());
+        service.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
+        service.addPlayerCallback(mPlayerCallback);
         onServiceConnected();
         applyDanmaku();
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
+        serviceConnectionCompleted = false;
         mService = null;
     }
 
