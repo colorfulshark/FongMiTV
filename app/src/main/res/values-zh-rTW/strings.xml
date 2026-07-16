@@ -158,10 +158,7 @@
     <string name="player_frame_rate">幀率顯示</string>
     <string name="player_frame_rate_info">影片：%1$.1f fps\n螢幕：%2$.1f Hz</string>
     <string name="player_audio_pass_through">音訊直通</string>
-    <string name="player_audio_decode">音訊軟解</string>
-    <string name="player_video_decode">視訊軟解</string>
     <string name="player_aac_track">AAC優先</string>
-    <string name="player_dv7_fallback">DV7回退</string>
     <string name="player_adblock">智慧去廣</string>
     <string name="player_tunnel">隧道模式</string>
     <string name="player_speed">長按倍速</string>

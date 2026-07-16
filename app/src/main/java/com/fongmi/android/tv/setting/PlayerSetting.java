@@ -140,35 +140,11 @@ public class PlayerSetting {
         Prefers.put("audio_pass_through", audioPassThrough);
     }
 
-    public static boolean isAudioPrefer() {
-        return Prefers.getBoolean("audio_prefer");
-    }
-
-    public static void putAudioPrefer(boolean audioPrefer) {
-        Prefers.put("audio_prefer", audioPrefer);
-    }
-
-    public static boolean isVideoPrefer() {
-        return Prefers.getBoolean("video_prefer");
-    }
-
-    public static void putVideoPrefer(boolean videoPrefer) {
-        Prefers.put("video_prefer", videoPrefer);
-    }
-
     public static boolean isPreferAAC() {
         return Prefers.getBoolean("prefer_aac");
     }
 
     public static void putPreferAAC(boolean preferAAC) {
         Prefers.put("prefer_aac", preferAAC);
-    }
-
-    public static boolean isDv7HevcFallback() {
-        return Prefers.getBoolean("dv7_hevc_fallback");
-    }
-
-    public static void putDv7HevcFallback(boolean fallback) {
-        Prefers.put("dv7_hevc_fallback", fallback);
     }
 }
