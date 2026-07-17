@@ -19,6 +19,7 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.SpeedDialog;
+import com.fongmi.android.tv.ui.dialog.DisplayModeDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -52,6 +53,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
         mBinding.speedText.setText(format.format(PlayerSetting.getSpeed()));
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
         mBinding.autoFrameRateText.setText((autoFrameRate = ResUtil.getStringArray(R.array.select_auto_frame_rate))[PlayerSetting.getAutoFrameRate()]);
+        mBinding.displayModesText.setText(getString(R.string.player_display_modes_count, DisplayModeDialog.getModeCount(requireActivity())));
         mBinding.frameRateText.setText(Setting.getSwitch(PlayerSetting.isFrameRateVisible()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.captionText.setText((caption = ResUtil.getStringArray(R.array.select_caption))[PlayerSetting.isCaption() ? 1 : 0]);
@@ -67,6 +69,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
         mBinding.speed.setOnClickListener(this::onSpeed);
         mBinding.background.setOnClickListener(this::onBackground);
         mBinding.autoFrameRate.setOnClickListener(this::onAutoFrameRate);
+        mBinding.displayModes.setOnClickListener(this::onDisplayModes);
         mBinding.frameRate.setOnClickListener(this::onFrameRate);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.preload.setOnClickListener(this::onPreload);
@@ -76,6 +79,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
 
     private void setVisible() {
         mBinding.caption.setVisibility(PlayerSetting.hasCaption() ? View.VISIBLE : View.GONE);
+        mBinding.displayModes.setVisibility(PlayerSetting.getAutoFrameRate() == PlayerSetting.AUTO_FRAME_RATE_OFF ? View.GONE : View.VISIBLE);
     }
 
     private void setRender(View view) {
@@ -135,8 +139,13 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, S
         new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_auto_frame_rate).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(autoFrameRate, PlayerSetting.getAutoFrameRate(), (dialog, which) -> {
             PlayerSetting.putAutoFrameRate(which);
             mBinding.autoFrameRateText.setText(autoFrameRate[which]);
+            mBinding.displayModes.setVisibility(which == PlayerSetting.AUTO_FRAME_RATE_OFF ? View.GONE : View.VISIBLE);
             dialog.dismiss();
         }).show();
+    }
+
+    private void onDisplayModes(View view) {
+        DisplayModeDialog.show(requireActivity());
     }
 
     private void setAdblock(View view) {
