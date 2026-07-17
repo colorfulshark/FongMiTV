@@ -33,6 +33,7 @@ greenrobot = "3.3.1"
 gson = "2.14.0"
 guava = "33.6.0-android"
 jna = "5.19.1"
+jsr305 = "3.0.2"
 jupnp = "3.0.4"
 juniversalchardet = "1.0.3"
 logger = "2.2.0"
@@ -97,6 +98,7 @@ glide-okhttp3-integration = { group = "com.github.bumptech.glide", name = "okhtt
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
+jsr305 = { group = "com.google.code.findbugs", name = "jsr305", version.ref = "jsr305" }
 juniversalchardet = { group = "com.googlecode.juniversalchardet", name = "juniversalchardet", version.ref = "juniversalchardet" }
 rtmp-client = { group = "com.github.mcxinyu", name = "LibRtmp-Client-for-Android", version.ref = "rtmpClient" }
 logger = { group = "com.orhanobut", name = "logger", version.ref = "logger" }

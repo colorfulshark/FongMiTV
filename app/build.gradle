@@ -148,5 +148,6 @@ dependencies {
     annotationProcessor libs.room.compiler
     annotationProcessor libs.eventbus.annotation.processor
     annotationProcessor libs.glide.compiler
+    compileOnly libs.jsr305
     coreLibraryDesugaring libs.desugar
 }
