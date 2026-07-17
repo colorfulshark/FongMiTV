@@ -155,11 +155,10 @@
     <string name="player_caption">字幕樣式</string>
     <string name="player_background">背景播放</string>
     <string name="player_auto_frame_rate">自動幀率匹配</string>
-    <string name="player_display_modes">系統支援的顯示模式</string>
-    <string name="player_display_modes_count">共 %1$d 個模式</string>
-    <string name="player_display_modes_empty">未取得可用的顯示模式</string>
-    <string name="player_display_mode_current"> · 目前</string>
-    <string name="player_display_mode_value">模式 %1$d · %2$d×%3$d · %4$.3f Hz%5$s</string>
+    <string name="player_display_modes">預設幀率設定</string>
+    <string name="player_default_frame_rate_system">系統預設</string>
+    <string name="player_default_frame_rate_value">%1$s Hz</string>
+    <string name="player_default_frame_rate_unavailable">%1$s Hz（目前無法使用）</string>
     <string name="player_frame_rate">幀率顯示</string>
     <string name="player_frame_rate_info">影片：%1$.1f fps\n螢幕：%2$.1f Hz</string>
     <string name="player_audio_pass_through">音訊直通</string>

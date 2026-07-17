@@ -7,6 +7,7 @@ import android.view.WindowManager;
 import androidx.appcompat.app.AlertDialog;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.player.DefaultDisplayModeManager;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -16,6 +17,7 @@ public class WebDialog {
 
     private WebDialog(View view) {
         this.dialog = new MaterialAlertDialogBuilder(App.activity()).setView(view).create();
+        DefaultDisplayModeManager.inherit(App.activity(), dialog);
         this.dialog.setOnDismissListener((DialogInterface.OnDismissListener) view);
     }
 

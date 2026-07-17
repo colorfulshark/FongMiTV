@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.player.DefaultDisplayModeManager;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -32,6 +33,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        DefaultDisplayModeManager.apply(this);
         enableEdgeToEdge();
         enableDynamicColor();
         super.onCreate(savedInstanceState);
@@ -40,6 +42,16 @@ public abstract class BaseActivity extends AppCompatActivity {
         initView(savedInstanceState);
         setBackCallback();
         initEvent();
+    }
+
+    @Override
+    protected void onStart() {
+        if (shouldApplyDefaultDisplayMode()) DefaultDisplayModeManager.apply(this);
+        super.onStart();
+    }
+
+    protected boolean shouldApplyDefaultDisplayMode() {
+        return true;
     }
 
     @Override

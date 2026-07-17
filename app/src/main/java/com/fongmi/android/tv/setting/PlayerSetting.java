@@ -112,6 +112,14 @@ public class PlayerSetting {
         Prefers.put("auto_frame_rate", Math.clamp(mode, AUTO_FRAME_RATE_OFF, AUTO_FRAME_RATE_ALWAYS));
     }
 
+    public static float getDefaultFrameRate() {
+        return Math.max(0, Prefers.getFloat("default_frame_rate"));
+    }
+
+    public static void putDefaultFrameRate(float frameRate) {
+        Prefers.put("default_frame_rate", Math.max(0, frameRate));
+    }
+
     public static float getSubtitleTextSize() {
         return Prefers.getFloat("subtitle_text_size");
     }

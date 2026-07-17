@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.player.DefaultDisplayModeManager;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -28,6 +29,7 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         BottomSheetDialog dialog = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
+        DefaultDisplayModeManager.inherit(requireActivity(), dialog);
         dialog.setOnShowListener(d -> setBehavior(dialog));
         Window window = dialog.getWindow();
         if (window == null) return dialog;

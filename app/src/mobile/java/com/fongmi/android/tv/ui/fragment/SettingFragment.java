@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.BuildConfig;
@@ -25,6 +26,7 @@ import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.impl.LiveListener;
 import com.fongmi.android.tv.impl.SiteListener;
+import com.fongmi.android.tv.player.DefaultDisplayModeManager;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
@@ -280,19 +282,25 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     }
 
     private void setSize(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_size).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(size, PlayerSetting.getSize(), (dialog, which) -> {
+        showDialog(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_size).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(size, PlayerSetting.getSize(), (dialog, which) -> {
             mBinding.sizeText.setText(size[which]);
             PlayerSetting.putSize(which);
             RefreshEvent.size();
             dialog.dismiss();
-        }).show();
+        }));
     }
 
     private void setDoh(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_doh).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(getDohList(), getDohIndex(), (dialog, which) -> {
+        showDialog(new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_doh).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(getDohList(), getDohIndex(), (dialog, which) -> {
             setDoh(VodConfig.get().getDoh().get(which));
             dialog.dismiss();
-        }).show();
+        }));
+    }
+
+    private void showDialog(@NonNull MaterialAlertDialogBuilder builder) {
+        AlertDialog dialog = builder.create();
+        DefaultDisplayModeManager.inherit(requireActivity(), dialog);
+        dialog.show();
     }
 
     private void setDoh(Doh doh) {

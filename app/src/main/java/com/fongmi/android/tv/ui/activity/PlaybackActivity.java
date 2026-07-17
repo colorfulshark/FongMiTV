@@ -166,6 +166,11 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     protected abstract String getPlaybackKey();
 
+    @Override
+    protected boolean shouldApplyDefaultDisplayMode() {
+        return !getPlayerView().hasActiveAutoFrameRateRequest();
+    }
+
     protected boolean isOwner() {
         String key = getPlaybackKey();
         return key == null || (mService != null && key.equals(player().getKey()));

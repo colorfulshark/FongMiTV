@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.player.DefaultDisplayModeManager;
 import com.fongmi.android.tv.ui.custom.CustomWallView;
 import com.fongmi.android.tv.utils.Util;
 
@@ -30,6 +31,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        DefaultDisplayModeManager.apply(this);
         super.onCreate(savedInstanceState);
         setContentView(getBinding().getRoot());
         EventBus.getDefault().register(this);
@@ -37,6 +39,16 @@ public abstract class BaseActivity extends AppCompatActivity {
         Util.hideSystemUI(this);
         setBackCallback();
         initEvent();
+    }
+
+    @Override
+    protected void onStart() {
+        if (shouldApplyDefaultDisplayMode()) DefaultDisplayModeManager.apply(this);
+        super.onStart();
+    }
+
+    protected boolean shouldApplyDefaultDisplayMode() {
+        return true;
     }
 
     @Override

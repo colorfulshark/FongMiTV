@@ -43,7 +43,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
 
     private int appliedMode = PlayerSetting.AUTO_FRAME_RATE_OFF;
     private int originalDisplayModeId;
-    private int originalPreferredDisplayModeId;
     private boolean originalDisplayModeCaptured;
     private boolean displayListenerRegistered;
     private boolean appliedWithoutPlayer;
@@ -113,18 +112,35 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
             return;
         }
         requestedFrameRate = normalizeFrameRate(requestedFrameRate);
+        boolean requestWillSwitch = !isCurrentRefreshRateCompatible(requestedFrameRate);
+        boolean sameRequest = appliedMode == mode && appliedSurfaceView == surfaceView && Math.abs(appliedFrameRate - requestedFrameRate) < RATE_EPSILON;
+        boolean playerHandoff = sameRequest && appliedWithoutPlayer && player != null;
+        if (sameRequest && !playerHandoff) return;
+        if (playerHandoff) {
+            appliedWithoutPlayer = false;
+            // The pre-match has already landed, so retain its request without rebuilding it.
+            // Otherwise continue below so beginDisplaySwitch() pauses the newly attached player.
+            if (!requestWillSwitch) return;
+        }
+
+        // Keep the app's default refresh-rate preference untouched when it already provides an
+        // exact cadence. Creating an equivalent video mode/surface request would only force a
+        // needless request-type transition when leaving playback.
+        if (!requestWillSwitch) {
+            if (appliedMode != PlayerSetting.AUTO_FRAME_RATE_OFF || originalDisplayModeCaptured) clear(surfaceView, true, true);
+            return;
+        }
 
         if (mode == PlayerSetting.AUTO_FRAME_RATE_SEAMLESS) {
             if (appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS) clearAppRequest();
+            captureOriginalDisplayMode();
+            clearPreferredDisplayModeForSurfaceMatching();
             appliedMode = mode;
             appliedFrameRate = requestedFrameRate;
             appliedSurfaceView = surfaceView;
             return;
         }
 
-        boolean sameRequest = appliedMode == mode && appliedSurfaceView == surfaceView && Math.abs(appliedFrameRate - requestedFrameRate) < RATE_EPSILON;
-        if (sameRequest && !(appliedWithoutPlayer && player != null)) return;
-        boolean requestWillSwitch = !isCurrentRefreshRateCompatible(requestedFrameRate);
         Display.Mode targetMode = findBestDisplayMode(requestedFrameRate);
         boolean systemAllowsSurfaceSwitch = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && displayManager != null && displayManager.getMatchContentFrameRateUserPreference() == DisplayManager.MATCH_CONTENT_FRAMERATE_ALWAYS;
         if (player != null && requestWillSwitch && (targetMode != null || systemAllowsSurfaceSwitch)) beginDisplaySwitch(player);
@@ -152,6 +168,7 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     }
 
     public void restoreForExit(@Nullable View currentSurfaceView, @NonNull Runnable completion) {
+        updateRestoreTargetFromDefault();
         boolean restoreRequested = appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS || originalDisplayModeCaptured;
         if (appliedMode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS) clearSurfaceFrameRate(appliedSurfaceView != null ? appliedSurfaceView : currentSurfaceView);
         cancelDisplaySwitch();
@@ -248,30 +265,51 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         if (activity == null || mode == null) return false;
         captureOriginalDisplayMode();
         WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
-        if (attributes.preferredDisplayModeId == mode.getModeId()) return true;
+        if (attributes.preferredDisplayModeId == mode.getModeId() && attributes.preferredRefreshRate == 0) return true;
+        attributes.preferredRefreshRate = 0;
         attributes.preferredDisplayModeId = mode.getModeId();
         activity.getWindow().setAttributes(attributes);
         return true;
+    }
+
+    private void clearPreferredDisplayModeForSurfaceMatching() {
+        Activity activity = findActivity(hostView.getContext());
+        if (activity == null) return;
+        WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
+        if (attributes.preferredDisplayModeId == 0 && attributes.preferredRefreshRate == 0) return;
+        attributes.preferredDisplayModeId = 0;
+        attributes.preferredRefreshRate = 0;
+        activity.getWindow().setAttributes(attributes);
     }
 
     private void captureOriginalDisplayMode() {
         if (originalDisplayModeCaptured) return;
         Activity activity = findActivity(hostView.getContext());
         if (activity == null) return;
+        int defaultModeId = DefaultDisplayModeManager.getPreferredModeId(activity);
+        if (defaultModeId != 0) {
+            originalDisplayModeId = defaultModeId;
+            originalDisplayModeCaptured = true;
+            return;
+        }
         Display display = hostView.getDisplay();
         originalDisplayModeId = display == null ? 0 : display.getMode().getModeId();
-        originalPreferredDisplayModeId = activity.getWindow().getAttributes().preferredDisplayModeId;
         originalDisplayModeCaptured = true;
     }
 
     private void restorePreferredDisplayMode() {
         if (!originalDisplayModeCaptured) return;
         Activity activity = findActivity(hostView.getContext());
-        if (activity != null) {
-            WindowManager.LayoutParams attributes = activity.getWindow().getAttributes();
-            attributes.preferredDisplayModeId = originalPreferredDisplayModeId;
-            activity.getWindow().setAttributes(attributes);
-        }
+        if (activity != null) DefaultDisplayModeManager.apply(activity);
+    }
+
+    private void updateRestoreTargetFromDefault() {
+        Activity activity = findActivity(hostView.getContext());
+        if (activity == null || PlayerSetting.getDefaultFrameRate() <= 0) return;
+        int defaultModeId = DefaultDisplayModeManager.getPreferredModeId(activity);
+        if (defaultModeId == 0) return;
+        originalDisplayModeId = defaultModeId;
+        originalDisplayModeCaptured = true;
     }
 
     private boolean isCurrentRefreshRateCompatible(float frameRate) {
@@ -342,7 +380,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
 
     private void clearOriginalDisplayMode() {
         originalDisplayModeId = 0;
-        originalPreferredDisplayModeId = 0;
         originalDisplayModeCaptured = false;
     }
 
