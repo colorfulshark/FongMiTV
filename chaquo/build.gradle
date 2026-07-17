@@ -46,6 +46,6 @@ android {
 }
 
 dependencies {
-    implementation project(':catvod')
+    implementation(project(':catvod'))
     coreLibraryDesugaring libs.desugar
 }
