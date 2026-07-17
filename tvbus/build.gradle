@@ -4,6 +4,7 @@ plugins {
 
 android {
     namespace = 'com.tvbus.engine'
+    ndkVersion = libs.versions.ndk.get()
 
     compileSdk libs.versions.compileSdk.get().toInteger()
 

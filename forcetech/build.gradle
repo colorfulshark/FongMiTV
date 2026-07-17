@@ -4,6 +4,7 @@ plugins {
 
 android {
     namespace = 'com.forcetech'
+    ndkVersion = libs.versions.ndk.get()
 
     compileSdk libs.versions.compileSdk.get().toInteger()
 

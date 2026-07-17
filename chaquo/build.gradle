@@ -5,6 +5,7 @@ plugins {
 
 android {
     namespace = 'com.fongmi.chaquo'
+    ndkVersion = libs.versions.ndk.get()
 
     compileSdk libs.versions.compileSdk.get().toInteger()
 
