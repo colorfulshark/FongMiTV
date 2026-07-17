@@ -581,7 +581,6 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private void completeServiceConnection(PlaybackService service) {
         if (mService != service || isDestroyed() || isFinishing()) return;
         serviceConnectionCompleted = true;
-        getPlayerView().beginAutoFrameRatePreMatch();
         service.setSessionActivity(buildSessionIntent());
         service.setNavigationCallback(getNavigationCallback(), getPlaybackKey());
         service.addPlayerCallback(mPlayerCallback);

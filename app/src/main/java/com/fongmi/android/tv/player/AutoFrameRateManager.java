@@ -29,7 +29,6 @@ import com.fongmi.android.tv.setting.PlayerSetting;
 public final class AutoFrameRateManager implements DisplayManager.DisplayListener {
 
     private static final float RATE_EPSILON = 0.02f;
-    private static final float DEFAULT_ALWAYS_FRAME_RATE = 25f;
     private static final long DISPLAY_SWITCH_TIMEOUT_MS = 2500L;
     private static final float[] STANDARD_FRAME_RATES = {23.976f, 24f, 25f, 29.97f, 30f, 47.952f, 48f, 50f, 59.94f, 60f, 100f, 119.88f, 120f};
 
@@ -45,7 +44,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     private int originalDisplayModeId;
     private boolean originalDisplayModeCaptured;
     private boolean displayListenerRegistered;
-    private boolean appliedWithoutPlayer;
     private boolean resumeAfterSwitch;
     private float appliedFrameRate;
     private long playbackIntentVersionAtSwitch;
@@ -83,45 +81,28 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
     }
 
     public void apply(@Nullable Player player, @Nullable View surfaceView, float measuredFrameRate) {
-        apply(player, surfaceView, measuredFrameRate, false);
-    }
-
-    public void preMatch(@Nullable View surfaceView) {
-        apply(null, surfaceView, 0, true);
-    }
-
-    private void apply(@Nullable Player player, @Nullable View surfaceView, float measuredFrameRate, boolean preMatch) {
         configurePlayer(player);
         int mode = PlayerSetting.getAutoFrameRate();
-        if (mode == PlayerSetting.AUTO_FRAME_RATE_OFF || (player == null && (!preMatch || mode != PlayerSetting.AUTO_FRAME_RATE_ALWAYS))) {
+        if (mode == PlayerSetting.AUTO_FRAME_RATE_OFF || player == null) {
             detachSurface(surfaceView);
             return;
         }
 
-        float playbackSpeed = player == null ? 1f : player.getPlaybackParameters().speed;
-        float contentFrameRate = player == null ? Format.NO_VALUE : getContentFrameRate(player);
+        float playbackSpeed = player.getPlaybackParameters().speed;
+        float contentFrameRate = getContentFrameRate(player);
         float requestedFrameRate;
         if (contentFrameRate > 0) {
             requestedFrameRate = contentFrameRate * playbackSpeed;
         } else if (measuredFrameRate > 0) {
             // Measured FPS is sampled against elapsed real time, so playback speed is already reflected.
             requestedFrameRate = measuredFrameRate;
-        } else if (mode == PlayerSetting.AUTO_FRAME_RATE_ALWAYS) {
-            requestedFrameRate = DEFAULT_ALWAYS_FRAME_RATE * playbackSpeed;
         } else {
             return;
         }
         requestedFrameRate = normalizeFrameRate(requestedFrameRate);
         boolean requestWillSwitch = !isCurrentRefreshRateCompatible(requestedFrameRate);
         boolean sameRequest = appliedMode == mode && appliedSurfaceView == surfaceView && Math.abs(appliedFrameRate - requestedFrameRate) < RATE_EPSILON;
-        boolean playerHandoff = sameRequest && appliedWithoutPlayer && player != null;
-        if (sameRequest && !playerHandoff) return;
-        if (playerHandoff) {
-            appliedWithoutPlayer = false;
-            // The pre-match has already landed, so retain its request without rebuilding it.
-            // Otherwise continue below so beginDisplaySwitch() pauses the newly attached player.
-            if (!requestWillSwitch) return;
-        }
+        if (sameRequest) return;
 
         // Keep the app's default refresh-rate preference untouched when it already provides an
         // exact cadence. Creating an equivalent video mode/surface request would only force a
@@ -143,7 +124,7 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
 
         Display.Mode targetMode = findBestDisplayMode(requestedFrameRate);
         boolean systemAllowsSurfaceSwitch = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && displayManager != null && displayManager.getMatchContentFrameRateUserPreference() == DisplayManager.MATCH_CONTENT_FRAMERATE_ALWAYS;
-        if (player != null && requestWillSwitch && (targetMode != null || systemAllowsSurfaceSwitch)) beginDisplaySwitch(player);
+        if (requestWillSwitch && (targetMode != null || systemAllowsSurfaceSwitch)) beginDisplaySwitch(player);
         boolean modeRequested = setPreferredDisplayMode(targetMode);
         boolean surfaceRequested = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && setSurfaceFrameRate(surfaceView, requestedFrameRate, Surface.CHANGE_FRAME_RATE_ALWAYS);
         if (surfaceRequested && !originalDisplayModeCaptured) captureOriginalDisplayMode();
@@ -152,7 +133,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         appliedMode = requested ? mode : PlayerSetting.AUTO_FRAME_RATE_OFF;
         appliedFrameRate = requested ? requestedFrameRate : 0;
         appliedSurfaceView = requested ? surfaceView : null;
-        appliedWithoutPlayer = requested && player == null;
     }
 
     public void clearSurface(@Nullable View currentSurfaceView) {
@@ -175,7 +155,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         appliedMode = PlayerSetting.AUTO_FRAME_RATE_OFF;
         appliedFrameRate = 0;
         appliedSurfaceView = null;
-        appliedWithoutPlayer = false;
         if (!restoreRequested) {
             completion.run();
             return;
@@ -199,7 +178,6 @@ public final class AutoFrameRateManager implements DisplayManager.DisplayListene
         appliedMode = PlayerSetting.AUTO_FRAME_RATE_OFF;
         appliedFrameRate = 0;
         appliedSurfaceView = null;
-        appliedWithoutPlayer = false;
     }
 
     private void clearAppRequest() {
