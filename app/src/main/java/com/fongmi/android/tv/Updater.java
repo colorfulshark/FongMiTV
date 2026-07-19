@@ -15,18 +15,20 @@ import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
+import com.google.common.net.HttpHeaders;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.Map;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    private final Download download;
+    private Download download;
     private UpdateDialog dialog;
 
     private Updater() {
-        this.download = Download.create(getApk(), getFile());
     }
 
     public static Updater create() {
@@ -37,12 +39,12 @@ public class Updater implements Download.Callback, UpdateListener {
         return Path.cache("update.apk");
     }
 
-    private String getJson() {
-        return Github.getJson(BuildConfig.FLAVOR_mode);
+    private String getApkName() {
+        return BuildConfig.FLAVOR_mode + "-" + BuildConfig.FLAVOR_abi + ".apk";
     }
 
-    private String getApk() {
-        return Github.getApk(BuildConfig.FLAVOR_mode + "-" + BuildConfig.FLAVOR_abi);
+    private Map<String, String> getHeaders() {
+        return Map.of(HttpHeaders.ACCEPT, "application/vnd.github+json", HttpHeaders.USER_AGENT, "FongMiTV/" + BuildConfig.VERSION_NAME, "X-GitHub-Api-Version", "2022-11-28");
     }
 
     public Updater force() {
@@ -58,15 +60,52 @@ public class Updater implements Download.Callback, UpdateListener {
 
     private void doInBackground(FragmentActivity activity) {
         try {
-            JSONObject object = new JSONObject(OkHttp.string(getJson()));
-            String name = object.optString("name");
-            String desc = object.optString("desc");
-            int code = object.optInt("code");
-            if (code <= BuildConfig.VERSION_CODE) return;
+            JSONObject object = new JSONObject(OkHttp.string(Github.getLatestRelease(), getHeaders()));
+            String tag = object.optString("tag_name");
+            if (!isNewerVersion(tag, BuildConfig.VERSION_NAME)) return;
+            String releaseName = object.optString("name");
+            String desc = object.optString("body");
+            String apk = findApk(object.optJSONArray("assets"));
+            String name = releaseName.isEmpty() ? tag : releaseName;
+            if (apk.isEmpty()) throw new IllegalStateException("Release asset not found: " + getApkName());
+            download = Download.create(apk, getFile());
             App.post(() -> show(activity, name, desc));
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private String findApk(JSONArray assets) {
+        if (assets == null) return "";
+        for (int i = 0; i < assets.length(); i++) {
+            JSONObject asset = assets.optJSONObject(i);
+            if (asset != null && getApkName().equals(asset.optString("name"))) return asset.optString("browser_download_url");
+        }
+        return "";
+    }
+
+    static boolean isNewerVersion(String latest, String current) {
+        try {
+            String[] a = getVersionParts(latest);
+            String[] b = getVersionParts(current);
+            for (int i = 0; i < Math.max(a.length, b.length); i++) {
+                int left = i < a.length ? Integer.parseInt(a[i]) : 0;
+                int right = i < b.length ? Integer.parseInt(b[i]) : 0;
+                if (left != right) return left > right;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private static String[] getVersionParts(String version) {
+        String value = version.trim();
+        if (value.startsWith("v") || value.startsWith("V")) value = value.substring(1);
+        int suffix = value.indexOf('-');
+        if (suffix >= 0) value = value.substring(0, suffix);
+        int metadata = value.indexOf('+');
+        if (metadata >= 0) value = value.substring(0, metadata);
+        return value.split("\\.");
     }
 
     private void show(FragmentActivity activity, String version, String desc) {
@@ -76,6 +115,7 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void onConfirm(View view) {
+        if (download == null) return;
         view.setEnabled(false);
         download.start(this);
     }
@@ -83,7 +123,7 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onCancel(View view) {
         Setting.putUpdate(false);
-        download.cancel();
+        if (download != null) download.cancel();
         dismiss();
     }
 
