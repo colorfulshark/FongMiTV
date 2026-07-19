@@ -62,7 +62,11 @@ public class Updater implements Download.Callback, UpdateListener {
         try {
             JSONObject object = new JSONObject(OkHttp.string(Github.getLatestRelease(), getHeaders()));
             String tag = object.optString("tag_name");
-            if (!isNewerVersion(tag, BuildConfig.VERSION_NAME)) return;
+            if (tag.isEmpty()) throw new IllegalStateException("Release tag not found");
+            if (!isNewerVersion(tag, BuildConfig.VERSION_NAME)) {
+                App.post(() -> Notify.show(R.string.update_latest));
+                return;
+            }
             String releaseName = object.optString("name");
             String desc = object.optString("body");
             String apk = findApk(object.optJSONArray("assets"));
